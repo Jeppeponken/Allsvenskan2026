@@ -395,7 +395,7 @@ const TippningTab=({tips,onSaveTip,toast})=>{
 };
 
 // ── ADMIN TAB ─────────────────────────────────────────────────────────────────
-const AdminTab=({tableData,onSaveTable,tips,onDeleteTip,toast,round,onSaveRound})=>{
+const AdminTab=({tableData,onSaveTable,tips,onDeleteTip,toast,round,onSaveRound,onEditingChange})=>{
   const [pin,setPin]=useState('');
   const [unlocked,setUnlocked]=useState(false);
   const [pinErr,setPinErr]=useState(false);
@@ -405,14 +405,14 @@ const AdminTab=({tableData,onSaveTable,tips,onDeleteTip,toast,round,onSaveRound}
   const [saving,setSaving]=useState(false);
   useEffect(()=>{if(unlocked)setRows(tableData.map(r=>({...r,pStr:String(r.points),gStr:String(r.goalDiff),mStr:String(r.played)})));},[unlocked,tableData]);
   useEffect(()=>{setRoundStr(String(round));},[round]);
-  const tryPin=()=>{if(pin==='2026'){setUnlocked(true);toast('Välkommen, admin!','success');}else{setPinErr(true);setPin('');toast('Fel PIN-kod!','error');setTimeout(()=>setPinErr(false),800);}};
+  const tryPin=()=>{if(pin==='2026'){setUnlocked(true);onEditingChange(true);toast('Välkommen, admin!','success');}else{setPinErr(true);setPin('');toast('Fel PIN-kod!','error');setTimeout(()=>setPinErr(false),800);}};
   const setRow=(id,f,v)=>setRows(p=>p.map(r=>r.teamId===id?{...r,[f]:v}:r));
   const saveAll=async()=>{
     setSaving(true);
     const parsed=rows.map(r=>({teamId:r.teamId,played:Math.max(0,parseInt(r.mStr)||0),points:Math.max(0,parseInt(r.pStr)||0),goalDiff:parseInt(r.gStr)||0}));
     const rnd=Math.max(0,parseInt(roundStr)||0);
     await Promise.all([onSaveTable(parsed),onSaveRound(rnd)]);
-    setSaving(false); toast('Tabellen sparad!','success');
+    setSaving(false); onEditingChange(false); toast('Tabellen sparad!','success');
   };
   const delTip=async name=>{await onDeleteTip(name);setConfirmDel(null);toast(`"${name}" raderades`,'info');};
   if(!unlocked) return(
@@ -509,6 +509,8 @@ function App(){
   const {list:toasts,add:toast,remove:removeToast}=useToasts();
   const pollRef=useRef(null);
 
+  const isEditingRef=useRef(false);
+
   const pullFirebase=useCallback(async(showLoader=false)=>{
     if(!FIREBASE_URL) return;
     if(showLoader) setLoading(true);
@@ -516,9 +518,12 @@ function App(){
       const data=await fbGet('');
       setOnline(true);
       if(data){
-        if(Array.isArray(data.table)&&data.table.length){setTableData(data.table);LS.write('table',data.table);}
+        // Skip overwriting table/round if admin is currently editing
+        if(!isEditingRef.current){
+          if(Array.isArray(data.table)&&data.table.length){setTableData(data.table);LS.write('table',data.table);}
+          if(data.round!=null){setRound(data.round);LS.write('round',data.round);}
+        }
         if(data.tips){const arr=tipsObjToArr(data.tips);setTips(arr);LS.write('tips',arr);}
-        if(data.round!=null){setRound(data.round);LS.write('round',data.round);}
       }
     }catch{setOnline(false);}
     finally{if(showLoader)setLoading(false);}
@@ -582,7 +587,7 @@ function App(){
       <div style={{maxWidth:640,margin:'0 auto',padding:'16px 16px 96px'}}>
         {tab==='ranking'&&<RankingTab tableData={tableData} tips={tips}/>}
         {tab==='tippa'  &&<TippningTab tips={tips} onSaveTip={saveTip} toast={toast}/>}
-        {tab==='admin'  &&<AdminTab tableData={tableData} onSaveTable={saveTable} tips={tips} onDeleteTip={deleteTip} toast={toast} round={round} onSaveRound={saveRound}/>}
+        {tab==='admin'  &&<AdminTab tableData={tableData} onSaveTable={saveTable} tips={tips} onDeleteTip={deleteTip} toast={toast} round={round} onSaveRound={saveRound} onEditingChange={v=>isEditingRef.current=v}/>}
       </div>
       {/* Bottom nav */}
       <div style={{position:'fixed',bottom:0,left:0,right:0,zIndex:40,background:'rgba(5,9,15,.97)',backdropFilter:'blur(16px)',borderTop:'1px solid #0f1e35',paddingBottom:'env(safe-area-inset-bottom,0px)'}}>
