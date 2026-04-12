@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#060c18"/>
+  <title>Allsvenskan 2026 – Tipstävling</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/lucide-react@0.344.0/dist/umd/lucide-react.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: #060c18; min-height: 100%; }
+    #root { min-height: 100dvh; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect, useCallback, useRef } = React;
+    const { Trophy, ChevronUp, ChevronDown, Users, Settings, X, Star,
+            Trash2, Eye, Lock, Medal, Wifi, WifiOff, Loader } = LucideReact;
+
+    // ── CONFIG ────────────────────────────────────────────────────────────────
+    const FIREBASE_URL = "https://test-project-c5285-default-rtdb.europe-west1.firebasedatabase.app";
+    const DB_PATH = "allsv26";
+    const POLL_MS = 15000;
+
+    // ── GLOBAL CSS ────────────────────────────────────────────────────────────
+    const GlobalStyles = () => (
+      <style dangerouslySetInnerHTML={{ __html: `
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap');
+        .fn-d { font-family: 'Barlow Condensed','Arial Narrow',Arial,sans-serif; }
+        .fn-b { font-family: 'Rajdhani','Segoe UI',sans-serif; }
+        @keyframes toastIn  { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
+        @keyframes toastOut { from{transform:translateX(0);opacity:1} to{transform:translateX(110%);opacity:0} }
+        @keyframes fadeUp   { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes shake    { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)} }
+        @keyframes spin     { to{transform:rotate(360deg)} }
+        .t-in  { animation: toastIn  .35s cubic-bezier(.34,1.56,.64,1) forwards; }
+        .t-out { animation: toastOut .25s ease forwards; }
+        .f-up  { animation: fadeUp   .3s ease forwards; }
+        .shk   { animation: shake    .4s ease; }
+        .spin  { animation: spin 1s linear infinite; }
+        .rg1 { background:linear-gradient(90deg,rgba(245,196,0,.11) 0%,transparent 55%); }
+        .rg2 { background:linear-gradient(90deg,rgba(192,192,192,.07) 0%,transparent 55%); }
+        .rg3 { background:linear-gradient(90deg,rgba(205,127,50,.07) 0%,transparent 55%); }
+        .rrl { background:linear-gradient(90deg,rgba(239,68,68,.08) 0%,transparent 55%); }
+        .sh  { transition:transform .18s; display:block; flex-shrink:0; }
+        .sh:hover { transform:scale(1.13) rotate(-4deg); }
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; }
+        input[type=number] { -moz-appearance:textfield; }
+      `}} />
+    );
+
+    // ── TEAMS ─────────────────────────────────────────────────────────────────
+    const TEAMS = [
+      { id:1,  name:"AIK",               short:"AIK",  pri:"#111111", sec:"#F5C400", txt:"#F5C400" },
+      { id:2,  name:"Malmö FF",          short:"MFF",  pri:"#005AA5", sec:"#FFFFFF", txt:"#FFFFFF" },
+      { id:3,  name:"IFK Göteborg",      short:"IFK",  pri:"#00338D", sec:"#FFFFFF", txt:"#FFFFFF" },
+      { id:4,  name:"Djurgårdens IF",    short:"DIF",  pri:"#1A4FA3", sec:"#DA291C", txt:"#FFFFFF" },
+      { id:5,  name:"Hammarby IF",       short:"HIF",  pri:"#005F30", sec:"#FFFFFF", txt:"#FFFFFF" },
+      { id:6,  name:"BK Häcken",         short:"BKH",  pri:"#F5C400", sec:"#111111", txt:"#111111" },
+      { id:7,  name:"Örgryte IS",        short:"ÖIS",  pri:"#C8102E", sec:"#003DA5", txt:"#FFFFFF" },
+      { id:8,  name:"Kalmar FF",         short:"KFF",  pri:"#CC0000", sec:"#FFFFFF", txt:"#FFFFFF" },
+      { id:9,  name:"IF Elfsborg",       short:"IFE",  pri:"#E8B400", sec:"#141414", txt:"#141414" },
+      { id:10, name:"GAIS",              short:"GAIS", pri:"#004D1A", sec:"#111111", txt:"#72C04E" },
+      { id:11, name:"IK Sirius",         short:"IKS",  pri:"#1A3070", sec:"#F5C400", txt:"#F5C400" },
+      { id:12, name:"Halmstads BK",      short:"HBK",  pri:"#1A4FA3", sec:"#E30613", txt:"#FFFFFF" },
+      { id:13, name:"Degerfors IF",      short:"DEG",  pri:"#C0161C", sec:"#111111", txt:"#FFFFFF" },
+      { id:14, name:"IF Brommapojkarna", short:"BP",   pri:"#CC0000", sec:"#111111", txt:"#FFFFFF" },
+      { id:15, name:"Mjällby AIF",       short:"MAI",  pri:"#F5C400", sec:"#111111", txt:"#111111" },
+      { id:16, name:"Västerås SK",       short:"VSK",  pri:"#005C2A", sec:"#FFFFFF", txt:"#FFFFFF" },
+    ];
+
+    // ── SVG SHIELD ────────────────────────────────────────────────────────────
+    const TeamShield = ({ teamId, size = 32 }) => {
+      const t = TEAMS.find(x => x.id === teamId);
+      if (!t) return <div style={{ width:size, height:Math.round(size*1.3) }}/>;
+      const w=size, h=Math.round(size*1.3), cx=w/2;
+      const sp = `M${cx} 2 L${w-3} ${h*.19} L${w-3} ${h*.58} Q${w-3} ${h*.85} ${cx} ${h-2} Q3 ${h*.85} 3 ${h*.58} L3 ${h*.19}Z`;
+      const ip = `M${cx} 5 L${w-6} ${h*.21} L${w-6} ${h*.57} Q${w-6} ${h*.82} ${cx} ${h-5} Q6 ${h*.82} 6 ${h*.57} L6 ${h*.21}Z`;
+      const fs = t.short.length>3?size*.19:t.short.length===3?size*.23:size*.27;
+      const uid = `${teamId}_${size}`;
+      const accents = {
+        1:  <line x1="3" y1={h*.43} x2={w-3} y2={h*.43} stroke={t.sec} strokeWidth="1" opacity=".5"/>,
+        4:  <polygon points={`${cx},${h*.2} ${w-6},${h*.4} ${w-6},${h*.2}`} fill={t.sec} opacity=".22"/>,
+        6:  <circle cx={cx} cy={h*.38} r={size*.09} fill="none" stroke={t.sec} strokeWidth="1" opacity=".5"/>,
+        7:  <>
+              <clipPath id={`clip7_${uid}`}><path d={ip}/></clipPath>
+              <rect x={cx} y={h*.06} width={cx-6} height={h*.88} fill="#003DA5" opacity=".55" clipPath={`url(#clip7_${uid})`}/>
+              <line x1={cx} y1={h*.06} x2={cx} y2={h*.92} stroke="#FFFFFF" strokeWidth=".8" opacity=".4"/>
+            </>,
+        10: <rect x={w*.25} y={h*.25} width={w*.5} height={h*.43} rx="2" fill="none" stroke={t.txt} strokeWidth=".8" opacity=".3"/>,
+        11: <polygon points={`${cx},${h*.2} ${cx+size*.08},${h*.31} ${cx},${h*.27} ${cx-size*.08},${h*.31}`} fill={t.sec} opacity=".6"/>,
+        12: <line x1="3" y1={h*.52} x2={w-3} y2={h*.52} stroke={t.sec} strokeWidth="1.2" opacity=".5"/>,
+        16: <>
+              <clipPath id={`clip16_${uid}`}><path d={ip}/></clipPath>
+              <line x1="3" y1={h*.22} x2={w*.55} y2={h*.75} stroke="#FFFFFF" strokeWidth="3.5" opacity=".15" clipPath={`url(#clip16_${uid})`}/>
+              <line x1={w*.2} y1={h*.18} x2={w*.9} y2={h*.72} stroke="#FFFFFF" strokeWidth="3.5" opacity=".15" clipPath={`url(#clip16_${uid})`}/>
+            </>,
+      };
+      return (
+        <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="sh">
+          <defs>
+            <linearGradient id={`g${uid}`} x1="0" y1="0" x2=".6" y2="1">
+              <stop offset="0%" stopColor={t.pri}/>
+              <stop offset="100%" stopColor={t.pri} stopOpacity=".8"/>
+            </linearGradient>
+          </defs>
+          <path d={sp} fill="rgba(0,0,0,.3)" transform="translate(1,2)"/>
+          <path d={sp} fill={`url(#g${uid})`}/>
+          <path d={ip} fill="none" stroke={t.sec} strokeWidth="1.1" opacity=".55"/>
+          {accents[teamId]}
+          <text x={cx} y={h*.61} textAnchor="middle" dominantBaseline="middle"
+            fill={t.txt} fontSize={fs} fontWeight="800"
+            fontFamily="'Barlow Condensed','Arial Narrow',Arial,sans-serif" letterSpacing=".4">
+            {t.short}
+          </text>
+        </svg>
+      );
+    };
+
+    // ── FIREBASE ──────────────────────────────────────────────────────────────
+    async function fbGet(path) {
+      if (!FIREBASE_URL) return null;
+      const res = await fetch(`${FIREBASE_URL}/${DB_PATH}${path ? '/'+path : ''}.json`);
+      if (!res.ok) throw new Error(`Firebase HTTP ${res.status}`);
+      return await res.json();
+    }
+    async function fbSet(path, data) {
+      if (!FIREBASE_URL) return false;
+      try {
+        const res = await fetch(`${FIREBASE_URL}/${DB_PATH}/${path}.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        return res.ok;
+      } catch { return false; }
+    }
+
+    function tipsObjToArr(obj) {
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return [];
+      return Object.values(obj).filter(Boolean);
+    }
+    function usernameKey(u) { return u.replace(/[.#$/[\]\s]/g, '_'); }
+
+    // ── LOCALSTORAGE ──────────────────────────────────────────────────────────
+    const LS = {
+      read(key, fb) {
+        try { const r=localStorage.getItem('allsv26_'+key); return r?(JSON.parse(r)??fb):fb; }
+        catch { return fb; }
+      },
+      write(key, val) { try { localStorage.setItem('allsv26_'+key, JSON.stringify(val)); } catch {} },
+    };
+
+    // ── TABLE ─────────────────────────────────────────────────────────────────
+    const initTable = () => TEAMS.map(t => ({ teamId:t.id, played:0, points:0, goalDiff:0 }));
+    const sortTable = d => [...d].sort((a,b) => {
+      if (b.points   !== a.points)   return b.points   - a.points;
+      if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff;
+      return (TEAMS.find(t=>t.id===a.teamId)?.name??'').localeCompare(TEAMS.find(t=>t.id===b.teamId)?.name??'','sv');
+    });
+
+    // ── SCORING ───────────────────────────────────────────────────────────────
+    function calcScore(tipIds, tableData) {
+      const ranked = sortTable(tableData);
+      let total = 0;
+      const details = tipIds.map((teamId,i) => {
+        const ap    = ranked.findIndex(r=>r.teamId===teamId);
+        const exact = ap === i;
+        const pts   = exact ? (i===0?3:i<=2?2:1) : 0;
+        total += pts;
+        return { teamId, tipPos:i, actualPos:ap, exact, pts };
+      });
+      return { total, details };
+    }
+
+    // ── TOAST ─────────────────────────────────────────────────────────────────
+    let _tid = 0;
+    function useToasts() {
+      const [list,setList] = useState([]);
+      const add = useCallback((msg, type='info', ms=3800) => {
+        const id = ++_tid;
+        setList(p => [...p, {id,msg,type,out:false}]);
+        setTimeout(() => {
+          setList(p => p.map(t => t.id===id?{...t,out:true}:t));
+          setTimeout(() => setList(p => p.filter(t => t.id!==id)), 320);
+        }, ms);
+      }, []);
+      const remove = useCallback(id => {
+        setList(p => p.map(t => t.id===id?{...t,out:true}:t));
+        setTimeout(() => setList(p => p.filter(t => t.id!==id)), 320);
+      }, []);
+      return { list, add, remove };
+    }
+    const TS = {
+      success: { b:'#22c55e', bg:'#052e16', c:'#4ade80', i:'✓' },
+      error:   { b:'#ef4444', bg:'#2d0707', c:'#f87171', i:'✕' },
+      info:    { b:'#F5C400', bg:'#1c1200', c:'#F5C400', i:'★' },
+    };
+    const Toasts = ({list, remove}) => (
+      <div style={{position:'fixed',top:16,right:16,zIndex:9999,display:'flex',flexDirection:'column',gap:8,width:'min(320px,calc(100vw - 32px))'}}>
+        {list.map(t => { const s=TS[t.type]||TS.info; return (
+          <div key={t.id} className={t.out?'t-out':'t-in'} onClick={()=>remove(t.id)}
+            style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',background:s.bg,border:`1px solid ${s.b}40`,borderLeft:`3px solid ${s.b}`,borderRadius:12,cursor:'pointer',boxShadow:'0 8px 32px rgba(0,0,0,.55)'}}>
+            <span style={{color:s.c,fontWeight:700,fontSize:16,flexShrink:0,fontFamily:'monospace'}}>{s.i}</span>
+            <span className="fn-b" style={{color:'#e2e8f0',fontSize:13,fontWeight:500,flex:1}}>{t.msg}</span>
+            <X size={12} color="#475569"/>
+          </div>
+        );})}
+      </div>
+    );
+
+    // ── DIALOG ────────────────────────────────────────────────────────────────
+    const Dialog = ({open, onClose, title, children}) => {
+      if (!open) return null;
+      return (
+        <div style={{position:'fixed',inset:0,zIndex:50,display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
+          <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,.88)',backdropFilter:'blur(7px)'}} onClick={onClose}/>
+          <div className="f-up fn-b" style={{position:'relative',zIndex:1,background:'#0a1020',border:'1px solid #1e293b',borderRadius:20,width:'100%',maxWidth:560,maxHeight:'88vh',overflowY:'auto',boxShadow:'0 24px 80px rgba(0,0,0,.85)'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 20px',borderBottom:'1px solid #1e293b',position:'sticky',top:0,background:'#0a1020',zIndex:2}}>
+              <h3 className="fn-d" style={{color:'#F5C400',fontSize:19,letterSpacing:2,margin:0}}>{title}</h3>
+              <button onClick={onClose} style={{background:'none',border:'none',color:'#475569',cursor:'pointer',padding:4,display:'flex'}}><X size={19}/></button>
+            </div>
+            <div style={{padding:'16px 20px'}}>{children}</div>
+          </div>
+        </div>
+      );
+    };
+
+    // ── SHARED UI ─────────────────────────────────────────────────────────────
+    const Card     = ({children}) => <div style={{background:'rgba(10,16,32,.88)',border:'1px solid #1e293b',borderRadius:20,overflow:'hidden'}}>{children}</div>;
+    const CardHead = ({children}) => <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'13px 16px',borderBottom:'1px solid #1e293b'}}>{children}</div>;
+    const TblHead  = ({cols, labels}) => (
+      <div style={{display:'grid',gridTemplateColumns:cols,gap:8,padding:'6px 16px',borderBottom:'1px solid #060c18'}}>
+        {labels.map((l,i) => <span key={i} className="fn-b" style={{fontSize:10,fontWeight:700,color:'#334155',textAlign:i>0?'center':'left',letterSpacing:.8}}>{l}</span>)}
+      </div>
+    );
+    const IS = {background:'#060c18',border:'1px solid #1e293b',borderRadius:8,padding:'6px 8px',color:'#f1f5f9',fontSize:13,fontFamily:"'Rajdhani',sans-serif",fontWeight:500,outline:'none',textAlign:'center',width:'100%',transition:'border-color .2s'};
+    const fgFocus = e => e.target.style.borderColor = '#F5C400';
+    const bgBlur  = e => e.target.style.borderColor = '#1e293b';
+
+    // ── TIP COMPARE ───────────────────────────────────────────────────────────
+    const TipCompare = ({tip, tableData}) => {
+      const {total, details} = calcScore(tip.teamIds, tableData);
+      const PC = {3:'#F5C400', 2:'#60a5fa', 1:'#4ade80', 0:'#334155'};
+      return (
+        <div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',background:'#0f1f38',borderRadius:12,padding:'10px 16px',marginBottom:14,border:'1px solid #1e293b'}}>
+            <span className="fn-b" style={{color:'#94a3b8',fontSize:13}}>Totalpoäng</span>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <Star size={15} color="#F5C400"/>
+              <span className="fn-d" style={{color:'#F5C400',fontSize:30,letterSpacing:2}}>{total}p</span>
+            </div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'30px 1fr 92px 34px',gap:6,padding:'0 4px 8px',borderBottom:'1px solid #1e293b',marginBottom:6}}>
+            {['#','LAG','FAKTISK','P'].map((h,i) => <span key={i} className="fn-b" style={{fontSize:10,fontWeight:700,color:'#334155',textAlign:i>1?'center':'left'}}>{h}</span>)}
+          </div>
+          {details.map(({teamId, tipPos, actualPos, exact, pts}) => {
+            const team = TEAMS.find(t => t.id===teamId);
+            return (
+              <div key={teamId} style={{display:'grid',gridTemplateColumns:'30px 1fr 92px 34px',gap:6,alignItems:'center',padding:'6px 6px',marginBottom:3,borderRadius:10,background:exact?`${PC[pts]}10`:'transparent',border:exact?`1px solid ${PC[pts]}25`:'1px solid transparent'}}>
+                <span className="fn-d" style={{color:'#475569',fontSize:14,textAlign:'center'}}>#{tipPos+1}</span>
+                <div style={{display:'flex',alignItems:'center',gap:7,minWidth:0}}>
+                  <TeamShield teamId={teamId} size={20}/>
+                  <span className="fn-b" style={{fontSize:12,color:'#e2e8f0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{team?.name}</span>
+                </div>
+                <span className="fn-b" style={{fontSize:12,textAlign:'center',color:exact?'#4ade80':'#475569'}}>
+                  {exact ? '✓ Rätt!' : actualPos>=0 ? `→ #${actualPos+1}` : '—'}
+                </span>
+                <span className="fn-d" style={{fontSize:15,textAlign:'center',color:PC[pts],opacity:pts===0?.3:1}}>
+                  {pts>0?`+${pts}`:'—'}
+                </span>
+              </div>
+            );
+          })}
+          <div className="fn-b" style={{marginTop:14,padding:'8px 12px',background:'#0f1f38',borderRadius:10,fontSize:11,color:'#475569',lineHeight:1.7}}>
+            <strong style={{color:'#F5C400'}}>Poängsystem:</strong> 3p = exakt 1:a · 2p = exakt 2:a/3:e · 1p = övriga exakta
+          </div>
+        </div>
+      );
+    };
+
+    // ── RANKING TAB ───────────────────────────────────────────────────────────
+    const RankingTab = ({tableData, tips}) => {
+      const [selUser, setSelUser] = useState(null);
+      const ranked      = sortTable(tableData);
+      const leaderboard = [...tips].map(u => ({...u, score:calcScore(u.teamIds,tableData).total})).sort((a,b)=>b.score-a.score);
+      const rowCls = pos => pos===0?'rg1':pos===1?'rg2':pos===2?'rg3':pos>=13?'rrl':'';
+      return (
+        <div style={{display:'flex',flexDirection:'column',gap:14}}>
+          <Card>
+            <CardHead><span className="fn-d" style={{color:'#F5C400',fontSize:20,letterSpacing:3}}>TABELL</span></CardHead>
+            <TblHead cols="28px 1fr 34px 44px 34px" labels={['#','LAG','M','+/-','P']}/>
+            {ranked.map((row, pos) => {
+              const team = TEAMS.find(t => t.id===row.teamId);
+              const gd   = row.goalDiff;
+              return (
+                <div key={row.teamId} className={rowCls(pos)} style={{display:'grid',gridTemplateColumns:'28px 1fr 34px 44px 34px',gap:8,alignItems:'center',padding:'7px 16px',borderBottom:'1px solid rgba(30,41,59,.5)'}}>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'center'}}>
+                    {pos===0?<Trophy size={13} color="#F5C400"/>:pos===1?<Medal size={13} color="#A0A0A0"/>:pos===2?<Medal size={13} color="#CD7F32"/>:<span className="fn-b" style={{color:'#475569',fontSize:12,fontWeight:600}}>{pos+1}</span>}
+                  </div>
+                  <div style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}>
+                    <TeamShield teamId={row.teamId} size={26}/>
+                    <span className="fn-b" style={{fontSize:13,fontWeight:600,color:'#e2e8f0',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{team?.name}</span>
+                  </div>
+                  <span className="fn-b" style={{fontSize:13,color:'#475569',textAlign:'center'}}>{row.played}</span>
+                  <span className="fn-b" style={{fontSize:13,fontWeight:600,textAlign:'center',color:gd>0?'#4ade80':gd<0?'#f87171':'#475569'}}>{gd>0?`+${gd}`:gd}</span>
+                  <span className="fn-b" style={{fontSize:14,fontWeight:700,textAlign:'center',color:'#f1f5f9'}}>{row.points}</span>
+                </div>
+              );
+            })}
+          </Card>
+          <Card>
+            <CardHead>
+              <span className="fn-d" style={{color:'#F5C400',fontSize:20,letterSpacing:3}}>TIPSTÄVLING</span>
+              <span className="fn-b" style={{fontSize:12,color:'#475569'}}>{tips.length} deltagare</span>
+            </CardHead>
+            {leaderboard.length===0 ? (
+              <div style={{padding:'42px 16px',textAlign:'center'}}>
+                <Users size={38} color="#1e293b" style={{margin:'0 auto 10px',display:'block'}}/>
+                <p className="fn-b" style={{color:'#334155',fontSize:14,margin:0}}>Inga tips än — gå till TIPPA-fliken!</p>
+              </div>
+            ) : leaderboard.map((u,i) => {
+              const medal = ['#F5C400','#9CA3AF','#8B5E3C'][i];
+              return (
+                <div key={u.username} onClick={()=>setSelUser(u)}
+                  style={{display:'flex',alignItems:'center',gap:12,padding:'10px 16px',borderBottom:'1px solid rgba(30,41,59,.5)',cursor:'pointer',transition:'background .15s'}}
+                  onMouseOver={e=>e.currentTarget.style.background='rgba(255,255,255,.025)'}
+                  onMouseOut={e=>e.currentTarget.style.background='transparent'}>
+                  <div style={{width:27,height:27,borderRadius:'50%',background:medal||'#1e293b',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                    <span className="fn-d" style={{color:i<3?'#111':'#94a3b8',fontSize:13}}>{i+1}</span>
+                  </div>
+                  <span className="fn-b" style={{flex:1,fontSize:14,fontWeight:600,color:'#e2e8f0'}}>{u.username}</span>
+                  <div style={{display:'flex',alignItems:'center',gap:5,background:'#0f1f38',borderRadius:8,padding:'4px 10px',border:'1px solid #1e293b'}}>
+                    <Star size={11} color="#F5C400"/>
+                    <span className="fn-d" style={{color:'#F5C400',fontSize:15,letterSpacing:1}}>{u.score}p</span>
+                  </div>
+                  <Eye size={13} color="#334155"/>
+                </div>
+              );
+            })}
+          </Card>
+          <Dialog open={!!selUser} onClose={()=>setSelUser(null)} title={`${selUser?.username||''} — Tips`}>
+            {selUser && <TipCompare tip={selUser} tableData={tableData}/>}
+          </Dialog>
+        </div>
+      );
+    };
+
+    // ── TIPPA TAB ─────────────────────────────────────────────────────────────
+    const TippningTab = ({tips, onSaveTip, toast}) => {
+      const [username, setUsername] = useState('');
+      const [order,    setOrder]    = useState(TEAMS.map(t=>t.id));
+      const [saved,    setSaved]    = useState(false);
+      const [saving,   setSaving]   = useState(false);
+
+      const moveUp   = i => { if(i===0) return; const o=[...order]; [o[i-1],o[i]]=[o[i],o[i-1]]; setOrder(o); };
+      const moveDown = i => { if(i===order.length-1) return; const o=[...order]; [o[i+1],o[i]]=[o[i],o[i+1]]; setOrder(o); };
+
+      const handleSave = async () => {
+        const name = username.trim();
+        if (!name)          { toast('Ange ett användarnamn!','error'); return; }
+        if (name.length>30) { toast('Max 30 tecken!','error'); return; }
+        setSaving(true);
+        const dup = tips.find(t=>t.username.toLowerCase()===name.toLowerCase());
+        await onSaveTip({ username:name, teamIds:[...order], ts:Date.now() });
+        setSaving(false);
+        toast(dup?`"${name}s" tips uppdaterades!`:`"${name}s" tips sparades!`,'success');
+        setSaved(true);
+        setTimeout(()=>setSaved(false), 2400);
+      };
+
+      const lbl = i => i===0?'🥇':i===1?'🥈':i===2?'🥉':null;
+
+      return (
+        <div style={{display:'flex',flexDirection:'column',gap:14}}>
+          <Card>
+            <div style={{padding:'14px 16px'}}>
+              <label className="fn-b" style={{display:'block',fontSize:11,fontWeight:700,color:'#475569',letterSpacing:1.2,textTransform:'uppercase',marginBottom:8}}>Ditt namn</label>
+              <input type="text" value={username} onChange={e=>setUsername(e.target.value)}
+                placeholder="Skriv ditt namn..." maxLength={30} className="fn-b"
+                onFocus={fgFocus} onBlur={bgBlur}
+                style={{...IS,textAlign:'left',padding:'11px 14px',fontSize:15,borderRadius:12}}/>
+            </div>
+          </Card>
+          <Card>
+            <CardHead><span className="fn-d" style={{color:'#F5C400',fontSize:20,letterSpacing:3}}>RANGORDNA LAGEN</span></CardHead>
+            <div style={{padding:'6px 16px 10px',borderBottom:'1px solid #0f2040'}}>
+              <span className="fn-b" style={{fontSize:11,color:'#334155'}}>Flytta lagen med pilarna — #1 är din Allsvenskan-vinnare</span>
+            </div>
+            {order.map((teamId, i) => {
+              const team = TEAMS.find(t=>t.id===teamId);
+              return (
+                <div key={teamId}
+                  style={{display:'flex',alignItems:'center',gap:10,padding:'8px 16px',borderBottom:'1px solid rgba(30,41,59,.45)',transition:'background .15s'}}
+                  onMouseOver={e=>e.currentTarget.style.background='rgba(255,255,255,.02)'}
+                  onMouseOut={e=>e.currentTarget.style.background='transparent'}>
+                  <span className="fn-d" style={{width:22,textAlign:'center',fontSize:16,flexShrink:0}}>
+                    {lbl(i) ?? <span className="fn-b" style={{color:'#334155',fontSize:12,fontWeight:600}}>{i+1}</span>}
+                  </span>
+                  <TeamShield teamId={teamId} size={26}/>
+                  <span className="fn-b" style={{flex:1,fontSize:14,fontWeight:600,color:'#e2e8f0',minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{team?.name}</span>
+                  <div style={{display:'flex',flexDirection:'column',gap:1,flexShrink:0}}>
+                    {[[()=>moveUp(i),i===0,ChevronUp],[()=>moveDown(i),i===order.length-1,ChevronDown]].map(([fn,dis,Icon],ki) => (
+                      <button key={ki} onClick={fn} disabled={dis}
+                        style={{background:'none',border:'none',padding:3,cursor:dis?'not-allowed':'pointer',color:dis?'#1e293b':'#F5C400',display:'flex',borderRadius:5,transition:'background .15s'}}
+                        onMouseOver={e=>{if(!dis)e.currentTarget.style.background='rgba(245,196,0,.15)';}}
+                        onMouseOut={e=>e.currentTarget.style.background='none'}>
+                        <Icon size={14}/>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </Card>
+          <button onClick={handleSave} disabled={saving} className="fn-d"
+            style={{width:'100%',padding:16,borderRadius:20,border:'none',cursor:saving?'wait':'pointer',fontSize:21,letterSpacing:4,fontWeight:700,transition:'all .25s',
+              background:saved?'#15803d':saving?'#78350f':'#F5C400',
+              color:(saved||saving)?'#fff':'#111',
+              display:'flex',alignItems:'center',justifyContent:'center',gap:10,
+              boxShadow:saved?'0 0 28px rgba(34,197,94,.3)':'0 4px 24px rgba(245,196,0,.15)'}}>
+            {saving?<><Loader size={18} className="spin"/>SPARAR...</>:saved?'✓ SPARAT!':'SPARA TIPS'}
+          </button>
+        </div>
+      );
+    };
+
+    // ── ADMIN TAB ─────────────────────────────────────────────────────────────
+    const AdminTab = ({tableData, onSaveTable, tips, onDeleteTip, toast, round, onSaveRound}) => {
+      const [pin,        setPin]        = useState('');
+      const [unlocked,   setUnlocked]   = useState(false);
+      const [pinErr,     setPinErr]     = useState(false);
+      const [rows,       setRows]       = useState([]);
+      const [roundStr,   setRoundStr]   = useState(String(round));
+      const [confirmDel, setConfirmDel] = useState(null);
+      const [saving,     setSaving]     = useState(false);
+
+      useEffect(() => {
+        if (unlocked) setRows(tableData.map(r=>({...r,pStr:String(r.points),gStr:String(r.goalDiff),mStr:String(r.played)})));
+      }, [unlocked, tableData]);
+      useEffect(() => { setRoundStr(String(round)); }, [round]);
+
+      const tryPin = () => {
+        if (pin==='2026') { setUnlocked(true); toast('Välkommen, admin!','success'); }
+        else { setPinErr(true); setPin(''); toast('Fel PIN-kod!','error'); setTimeout(()=>setPinErr(false),800); }
+      };
+      const setRow = (id,f,v) => setRows(p=>p.map(r=>r.teamId===id?{...r,[f]:v}:r));
+      const saveAll = async () => {
+        setSaving(true);
+        const parsed = rows.map(r=>({teamId:r.teamId,played:Math.max(0,parseInt(r.mStr)||0),points:Math.max(0,parseInt(r.pStr)||0),goalDiff:parseInt(r.gStr)||0}));
+        const rnd = Math.max(0,parseInt(roundStr)||0);
+        await Promise.all([onSaveTable(parsed), onSaveRound(rnd)]);
+        setSaving(false);
+        toast('Tabellen sparad!','success');
+      };
+      const delTip = async name => {
+        await onDeleteTip(name);
+        setConfirmDel(null);
+        toast(`"${name}" raderades`,'info');
+      };
+
+      if (!unlocked) return (
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:280}}>
+          <div className={pinErr?'shk':''} style={{background:'rgba(10,16,32,.9)',border:`1px solid ${pinErr?'#ef4444':'#1e293b'}`,borderRadius:20,padding:32,width:'100%',maxWidth:300,textAlign:'center',transition:'border-color .3s'}}>
+            <Lock size={42} color="#F5C400" style={{margin:'0 auto 12px',display:'block'}}/>
+            <h2 className="fn-d" style={{color:'#f1f5f9',fontSize:26,letterSpacing:3,margin:'0 0 4px'}}>ADMIN</h2>
+            <p className="fn-b" style={{color:'#334155',fontSize:13,margin:'0 0 20px'}}>Ange PIN-kod för att fortsätta</p>
+            <input type="password" value={pin} onChange={e=>setPin(e.target.value)}
+              onKeyDown={e=>e.key==='Enter'&&tryPin()} placeholder="• • • •"
+              className="fn-b" onFocus={fgFocus} onBlur={bgBlur}
+              style={{...IS,fontSize:24,letterSpacing:10,padding:'10px 16px',borderRadius:12,marginBottom:12,borderColor:pinErr?'#ef4444':'#1e293b'}}/>
+            <button onClick={tryPin} className="fn-d"
+              style={{width:'100%',padding:'12px',background:'#F5C400',color:'#111',border:'none',borderRadius:12,fontSize:18,letterSpacing:2,cursor:'pointer',fontWeight:700}}>
+              LOGGA IN
+            </button>
+          </div>
+        </div>
+      );
+
+      return (
+        <div style={{display:'flex',flexDirection:'column',gap:14}}>
+          <Card>
+            <div style={{padding:'14px 16px'}}>
+              <label className="fn-b" style={{display:'block',fontSize:11,fontWeight:700,color:'#475569',letterSpacing:1.2,textTransform:'uppercase',marginBottom:8}}>Omgång</label>
+              <input type="number" value={roundStr} onChange={e=>setRoundStr(e.target.value)}
+                min={0} max={30} onFocus={fgFocus} onBlur={bgBlur} className="fn-b" style={{...IS,width:72,borderRadius:10}}/>
+            </div>
+          </Card>
+          <Card>
+            <CardHead><span className="fn-d" style={{color:'#F5C400',fontSize:20,letterSpacing:3}}>REDIGERA TABELL</span></CardHead>
+            <TblHead cols="1fr 50px 60px 50px" labels={['LAG','M','+/-','P']}/>
+            {rows.map(row => {
+              const team = TEAMS.find(t=>t.id===row.teamId);
+              return (
+                <div key={row.teamId} style={{display:'grid',gridTemplateColumns:'1fr 50px 60px 50px',gap:8,alignItems:'center',padding:'8px 16px',borderBottom:'1px solid rgba(30,41,59,.4)'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}>
+                    <TeamShield teamId={row.teamId} size={22}/>
+                    <span className="fn-b" style={{fontSize:12,color:'#94a3b8',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{team?.name}</span>
+                  </div>
+                  <input type="number" value={row.mStr} onChange={e=>setRow(row.teamId,'mStr',e.target.value)} onFocus={fgFocus} onBlur={bgBlur} className="fn-b" style={IS}/>
+                  <input type="text" inputMode="numeric" value={row.gStr}
+                    onChange={e=>{const v=e.target.value;if(v===''||v==='-'||/^-?\d+$/.test(v))setRow(row.teamId,'gStr',v);}}
+                    onFocus={fgFocus} onBlur={bgBlur} className="fn-b" style={IS}/>
+                  <input type="number" value={row.pStr} onChange={e=>setRow(row.teamId,'pStr',e.target.value)} onFocus={fgFocus} onBlur={bgBlur} className="fn-b" style={IS}/>
+                </div>
+              );
+            })}
+          </Card>
+          <button onClick={saveAll} disabled={saving} className="fn-d"
+            style={{width:'100%',padding:16,background:saving?'#78350f':'#F5C400',color:saving?'#fff':'#111',border:'none',borderRadius:20,fontSize:21,letterSpacing:4,cursor:saving?'wait':'pointer',fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',gap:10,transition:'background .15s'}}
+            onMouseOver={e=>{if(!saving)e.currentTarget.style.background='#fdd935';}}
+            onMouseOut={e=>{if(!saving)e.currentTarget.style.background='#F5C400';}}>
+            {saving?<><Loader size={18} className="spin"/>SPARAR...</>:'SPARA TABELL'}
+          </button>
+          <Card>
+            <CardHead>
+              <span className="fn-d" style={{color:'#ef4444',fontSize:20,letterSpacing:3}}>RADERA TIPS</span>
+              <span className="fn-b" style={{fontSize:11,color:'#334155'}}>{tips.length} tips</span>
+            </CardHead>
+            {tips.length===0?(
+              <p className="fn-b" style={{padding:'20px 16px',color:'#334155',fontSize:13,textAlign:'center',margin:0}}>Inga tips att radera</p>
+            ):tips.map(t=>(
+              <div key={t.username} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid rgba(30,41,59,.5)'}}>
+                <div>
+                  <span className="fn-b" style={{fontSize:14,color:'#e2e8f0'}}>{t.username}</span>
+                  {t.ts&&<span className="fn-b" style={{fontSize:11,color:'#334155',marginLeft:8}}>{new Date(t.ts).toLocaleDateString('sv-SE')}</span>}
+                </div>
+                {confirmDel===t.username?(
+                  <div style={{display:'flex',gap:8}}>
+                    <button onClick={()=>delTip(t.username)} className="fn-b"
+                      style={{fontSize:12,padding:'5px 12px',background:'#ef4444',color:'#fff',border:'none',borderRadius:8,cursor:'pointer',fontWeight:700}}>Bekräfta</button>
+                    <button onClick={()=>setConfirmDel(null)} className="fn-b"
+                      style={{fontSize:12,padding:'5px 12px',background:'#1e293b',color:'#94a3b8',border:'none',borderRadius:8,cursor:'pointer'}}>Avbryt</button>
+                  </div>
+                ):(
+                  <button onClick={()=>setConfirmDel(t.username)}
+                    style={{background:'none',border:'none',cursor:'pointer',padding:6,color:'#ef4444',opacity:.55,transition:'opacity .15s,background .15s',display:'flex',borderRadius:8}}
+                    onMouseOver={e=>{e.currentTarget.style.opacity='1';e.currentTarget.style.background='rgba(239,68,68,.1)';}}
+                    onMouseOut={e=>{e.currentTarget.style.opacity='.55';e.currentTarget.style.background='none';}}>
+                    <Trash2 size={16}/>
+                  </button>
+                )}
+              </div>
+            ))}
+          </Card>
+        </div>
+      );
+    };
+
+    // ── APP ROOT ──────────────────────────────────────────────────────────────
+    function App() {
+      const [tab,       setTab]       = useState('ranking');
+      const [tableData, setTableData] = useState(() => LS.read('table', initTable()));
+      const [tips,      setTips]      = useState(() => LS.read('tips',  []));
+      const [round,     setRound]     = useState(() => LS.read('round', 0));
+      const [online,    setOnline]    = useState(false);
+      const [loading,   setLoading]   = useState(!!FIREBASE_URL);
+      const { list:toasts, add:toast, remove:removeToast } = useToasts();
+      const pollRef = useRef(null);
+
+      const pullFirebase = useCallback(async (showLoader=false) => {
+        if (!FIREBASE_URL) return;
+        if (showLoader) setLoading(true);
+        try {
+          const data = await fbGet('');
+          setOnline(true);
+          if (data) {
+            if (Array.isArray(data.table) && data.table.length) { setTableData(data.table); LS.write('table',data.table); }
+            if (data.tips) { const arr=tipsObjToArr(data.tips); setTips(arr); LS.write('tips',arr); }
+            if (data.round != null) { setRound(data.round); LS.write('round',data.round); }
+          }
+        } catch { setOnline(false); }
+        finally { if (showLoader) setLoading(false); }
+      }, []);
+
+      useEffect(() => {
+        pullFirebase(true);
+        if (FIREBASE_URL) { pollRef.current = setInterval(()=>pullFirebase(false), POLL_MS); }
+        return () => clearInterval(pollRef.current);
+      }, [pullFirebase]);
+
+      const saveTable = async parsed => {
+        setTableData(parsed); LS.write('table',parsed);
+        if (FIREBASE_URL) { const ok=await fbSet('table',parsed); if(!ok) toast('Firebase-fel – sparades lokalt','error'); }
+      };
+      const saveRound = async rnd => {
+        setRound(rnd); LS.write('round',rnd);
+        if (FIREBASE_URL) await fbSet('round',rnd);
+      };
+      const saveTip = async tip => {
+        const newTips = tips.find(t=>t.username.toLowerCase()===tip.username.toLowerCase())
+          ? tips.map(t=>t.username.toLowerCase()===tip.username.toLowerCase()?tip:t)
+          : [...tips,tip];
+        setTips(newTips); LS.write('tips',newTips);
+        if (FIREBASE_URL) { const ok=await fbSet(`tips/${usernameKey(tip.username)}`,tip); if(!ok) toast('Firebase-fel – sparades lokalt','error'); }
+      };
+      const deleteTip = async username => {
+        const newTips = tips.filter(t=>t.username!==username);
+        setTips(newTips); LS.write('tips',newTips);
+        if (FIREBASE_URL) await fbSet(`tips/${usernameKey(username)}`,null);
+      };
+
+      const TABS = [
+        { id:'ranking', label:'RANKING', icon:<Trophy size={16}/> },
+        { id:'tippa',   label:'TIPPA',   icon:<Users  size={16}/> },
+        { id:'admin',   label:'ADMIN',   icon:<Settings size={16}/> },
+      ];
+
+      if (loading) return (
+        <div style={{minHeight:'100dvh',background:'linear-gradient(155deg,#05090f 0%,#080f1e 45%,#050b16 100%)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:16}}>
+          <GlobalStyles/>
+          <Loader size={36} color="#F5C400" className="spin"/>
+          <span className="fn-d" style={{color:'#475569',fontSize:18,letterSpacing:3}}>LADDAR DATA...</span>
+        </div>
+      );
+
+      return (
+        <div style={{minHeight:'100dvh',background:'linear-gradient(155deg,#05090f 0%,#080f1e 45%,#050b16 100%)'}}>
+          <GlobalStyles/>
+          <Toasts list={toasts} remove={removeToast}/>
+          <div style={{position:'sticky',top:0,zIndex:30,background:'rgba(5,9,15,.96)',backdropFilter:'blur(14px)',borderBottom:'1px solid #0f1e35'}}>
+            <div style={{maxWidth:640,margin:'0 auto',padding:'0 16px'}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'11px 0 12px'}}>
+                <div>
+                  <div className="fn-d" style={{color:'#fff',fontSize:27,letterSpacing:5,lineHeight:1}}>ALLSVENSKAN</div>
+                  <div className="fn-d" style={{color:'#F5C400',fontSize:13,letterSpacing:6}}>2026 TIPSTÄVLING</div>
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:10}}>
+                  <div title={online?'Synkat med Firebase':'Ansluter...'} style={{display:'flex',alignItems:'center'}}>
+                    {online?<Wifi size={14} color="#22c55e" opacity={.8}/>:<WifiOff size={14} color="#ef4444" opacity={.8}/>}
+                  </div>
+                  <div style={{textAlign:'right',background:'rgba(245,196,0,.07)',border:'1px solid rgba(245,196,0,.18)',borderRadius:12,padding:'7px 14px'}}>
+                    <div className="fn-b" style={{fontSize:10,color:'#334155',letterSpacing:1.2,textTransform:'uppercase'}}>Omgång</div>
+                    <div className="fn-d" style={{color:'#F5C400',fontSize:30,lineHeight:1.1}}>{round}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style={{maxWidth:640,margin:'0 auto',padding:'16px 16px 96px'}}>
+            {tab==='ranking' && <RankingTab tableData={tableData} tips={tips}/>}
+            {tab==='tippa'   && <TippningTab tips={tips} onSaveTip={saveTip} toast={toast}/>}
+            {tab==='admin'   && <AdminTab tableData={tableData} onSaveTable={saveTable} tips={tips} onDeleteTip={deleteTip} toast={toast} round={round} onSaveRound={saveRound}/>}
+          </div>
+          <div style={{position:'fixed',bottom:0,left:0,right:0,zIndex:40,background:'rgba(5,9,15,.97)',backdropFilter:'blur(16px)',borderTop:'1px solid #0f1e35',paddingBottom:'env(safe-area-inset-bottom,0px)'}}>
+            <div style={{maxWidth:640,margin:'0 auto',display:'flex'}}>
+              {TABS.map(({id,label,icon}) => {
+                const active = tab===id;
+                return (
+                  <button key={id} onClick={()=>setTab(id)} className="fn-b"
+                    style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,padding:'10px 0 11px',background:'none',border:'none',cursor:'pointer',transition:'color .15s',color:active?'#F5C400':'#334155'}}>
+                    <span style={{display:'flex',alignItems:'center',justifyContent:'center',width:34,height:34,borderRadius:10,background:active?'rgba(245,196,0,.12)':'transparent',transition:'background .15s'}}>
+                      {icon}
+                    </span>
+                    <span style={{fontSize:10,fontWeight:700,letterSpacing:.8,textTransform:'uppercase'}}>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App/>);
+  </script>
+</body>
+</html>
