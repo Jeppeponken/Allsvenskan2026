@@ -9,10 +9,12 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
+    /* CSS FIX: @import måste vara absolut först */
+    @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap');
+    
     *, *::before, *::after { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; background: #060c18; }
     #root { min-height: 100dvh; }
-    @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap');
     .fn-d { font-family: 'Barlow Condensed','Arial Narrow',Arial,sans-serif; }
     .fn-b { font-family: 'Rajdhani','Segoe UI',sans-serif; }
     @keyframes toastIn  { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
@@ -39,6 +41,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel" data-presets="react">
+// JS FIX: Använd React direkt från window (inga imports!)
 const { useState, useEffect, useCallback, useRef } = React;
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
@@ -57,7 +60,7 @@ const Trophy   = ({size=16,color="currentColor"}) => <svg width={size} height={s
 const ChevronUp   = ({size=16,color="currentColor"}) => <Icon size={size} color={color} d="M18 15l-6-6-6 6"/>;
 const ChevronDown = ({size=16,color="currentColor"}) => <Icon size={size} color={color} d="M6 9l6 6 6-6"/>;
 const Users    = ({size=16,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
-const Settings = ({size=16,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
+const Settings = ({size=16,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
 const XIcon    = ({size=16,color="currentColor"}) => <Icon size={size} color={color} d="M18 6L6 18M6 6l12 12"/>;
 const Star     = ({size=16,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
 const Trash2   = ({size=16,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>;
@@ -128,9 +131,6 @@ const TeamShield = ({ teamId, size=32 }) => {
 };
 
 // ── FIREBASE ──────────────────────────────────────────────────────────────────
-// --- CHANGED: Removed the odd Firebase configuration parsing to instead rely on
-// standard fetching to interact with the database correctly and to avoid the
-// previous string parsing errors. This is the new way to grab data.
 async function fbGet(path) {
   if (!FIREBASE_URL) return null;
   const res = await fetch(`${FIREBASE_URL}/${DB_PATH}${path?'/'+path:''}.json`);
@@ -160,16 +160,16 @@ const LS = {
 
 // ── TABLE + SCORING ───────────────────────────────────────────────────────────
 const initTable = () => TEAMS.map(t=>({teamId:t.id,played:0,points:0,goalDiff:0}));
-// --- CHANGED: Made sure to cast to number so we never sort on empty string
+
+// DATA FIX: Säkerställer att smutsig data (ex. '-') tvingas till 0 innan sortering!
 const sortTable = d => [...d].sort((a,b)=>{
-  const pA = isNaN(a.points) ? 0 : Number(a.points);
-  const pB = isNaN(b.points) ? 0 : Number(b.points);
-  const gdA = isNaN(a.goalDiff) ? 0 : Number(a.goalDiff);
-  const gdB = isNaN(b.goalDiff) ? 0 : Number(b.goalDiff);
-  
+  const pA = Number(a.points) || 0;
+  const pB = Number(b.points) || 0;
+  const gdA = Number(a.goalDiff) || 0;
+  const gdB = Number(b.goalDiff) || 0;
+
   if(pB !== pA) return pB - pA;
   if(gdB !== gdA) return gdB - gdA;
-  
   return (TEAMS.find(t=>t.id===a.teamId)?.name??'').localeCompare(TEAMS.find(t=>t.id===b.teamId)?.name??'','sv');
 });
 
@@ -414,18 +414,47 @@ const AdminTab=({tableData,onSaveTable,tips,onDeleteTip,toast,round,onSaveRound,
   const [roundStr,setRoundStr]=useState(String(round));
   const [confirmDel,setConfirmDel]=useState(null);
   const [saving,setSaving]=useState(false);
-  useEffect(()=>{if(unlocked)setRows(tableData.map(r=>({...r,pStr:String(r.points),gStr:String(r.goalDiff),mStr:String(r.played)})));},[unlocked,tableData]);
+  
+  useEffect(()=>{
+    if(unlocked) {
+      setRows(tableData.map(r=>({...r,pStr:String(r.points),gStr:String(r.goalDiff),mStr:String(r.played)})));
+    }
+  },[unlocked,tableData]);
+  
   useEffect(()=>{setRoundStr(String(round));},[round]);
-  const tryPin=()=>{if(pin==='2026'){setUnlocked(true);onEditingChange(true);toast('Välkommen, admin!','success');}else{setPinErr(true);setPin('');toast('Fel PIN-kod!','error');setTimeout(()=>setPinErr(false),800);}};
+  
+  const tryPin=()=>{
+    if(pin==='2026'){
+      setUnlocked(true);
+      onEditingChange(true);
+      toast('Välkommen, admin!','success');
+    } else {
+      setPinErr(true);
+      setPin('');
+      toast('Fel PIN-kod!','error');
+      setTimeout(()=>setPinErr(false),800);
+    }
+  };
+  
   const setRow=(id,f,v)=>setRows(p=>p.map(r=>r.teamId===id?{...r,[f]:v}:r));
+  
   const saveAll=async()=>{
     setSaving(true);
-    const parsed=rows.map(r=>({teamId:r.teamId,played:Math.max(0,parseInt(r.mStr)||0),points:Math.max(0,parseInt(r.pStr)||0),goalDiff:parseInt(r.gStr)||0}));
+    const parsed=rows.map(r=>({
+      teamId:r.teamId,
+      played:Math.max(0,parseInt(r.mStr)||0),
+      points:Math.max(0,parseInt(r.pStr)||0),
+      goalDiff:parseInt(r.gStr)||0
+    }));
     const rnd=Math.max(0,parseInt(roundStr)||0);
     await Promise.all([onSaveTable(parsed),onSaveRound(rnd)]);
-    setSaving(false); onEditingChange(false); toast('Tabellen sparad!','success');
+    setSaving(false); 
+    onEditingChange(false); 
+    toast('Tabellen sparad!','success');
   };
+  
   const delTip=async name=>{await onDeleteTip(name);setConfirmDel(null);toast(`"${name}" raderades`,'info');};
+  
   if(!unlocked) return(
     <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:280}}>
       <div className={pinErr?'shk':''} style={{background:'rgba(10,16,32,.9)',border:`1px solid ${pinErr?'#ef4444':'#1e293b'}`,borderRadius:20,padding:32,width:'100%',maxWidth:300,textAlign:'center',transition:'border-color .3s'}}>
@@ -464,7 +493,6 @@ const AdminTab=({tableData,onSaveTable,tips,onDeleteTip,toast,round,onSaveRound,
               </div>
               <input type="number" value={row.mStr} onChange={e=>setRow(row.teamId,'mStr',e.target.value)} onFocus={fgFocus} onBlur={bgBlur} className="fn-b" style={IS}/>
               <input type="text" inputMode="numeric" value={row.gStr}
-                // --- FIX FOR NEGATIVE NUMBERS IN GOAL DIFFERENCE ---
                 onChange={e=>{const v=e.target.value;if(v===''||v==='-'||/^-?\d+$/.test(v))setRow(row.teamId,'gStr',v);}}
                 onFocus={fgFocus} onBlur={bgBlur} className="fn-b" style={IS}/>
               <input type="number" value={row.pStr} onChange={e=>setRow(row.teamId,'pStr',e.target.value)} onFocus={fgFocus} onBlur={bgBlur} className="fn-b" style={IS}/>
@@ -530,7 +558,6 @@ function App(){
       const data=await fbGet('');
       setOnline(true);
       if(data){
-        // Skip overwriting table/round if admin is currently editing
         if(!isEditingRef.current){
           if(Array.isArray(data.table)&&data.table.length){setTableData(data.table);LS.write('table',data.table);}
           if(data.round!=null){setRound(data.round);LS.write('round',data.round);}
@@ -575,7 +602,6 @@ function App(){
   return(
     <div style={{minHeight:'100dvh',background:'linear-gradient(155deg,#05090f 0%,#080f1e 45%,#050b16 100%)'}}>
       <Toasts list={toasts} remove={removeToast}/>
-      {/* Header */}
       <div style={{position:'sticky',top:0,zIndex:30,background:'rgba(5,9,15,.96)',backdropFilter:'blur(14px)',borderBottom:'1px solid #0f1e35'}}>
         <div style={{maxWidth:640,margin:'0 auto',padding:'0 16px'}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'11px 0 12px'}}>
@@ -595,13 +621,11 @@ function App(){
           </div>
         </div>
       </div>
-      {/* Content */}
       <div style={{maxWidth:640,margin:'0 auto',padding:'16px 16px 96px'}}>
         {tab==='ranking'&&<RankingTab tableData={tableData} tips={tips}/>}
         {tab==='tippa'  &&<TippningTab tips={tips} onSaveTip={saveTip} toast={toast}/>}
         {tab==='admin'  &&<AdminTab tableData={tableData} onSaveTable={saveTable} tips={tips} onDeleteTip={deleteTip} toast={toast} round={round} onSaveRound={saveRound} onEditingChange={v=>isEditingRef.current=v}/>}
       </div>
-      {/* Bottom nav */}
       <div style={{position:'fixed',bottom:0,left:0,right:0,zIndex:40,background:'rgba(5,9,15,.97)',backdropFilter:'blur(16px)',borderTop:'1px solid #0f1e35',paddingBottom:'env(safe-area-inset-bottom,0px)'}}>
         <div style={{maxWidth:640,margin:'0 auto',display:'flex'}}>
           {TABS.map(({id,label,icon})=>{
@@ -622,6 +646,7 @@ function App(){
   );
 }
 
-export default function AppWrapper() {
-  return <ErrorBoundary><MainApp /></ErrorBoundary>;
-}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
