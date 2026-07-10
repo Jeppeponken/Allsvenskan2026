@@ -7,9 +7,9 @@
   <title>Allsvenskan 2026 – Tipstävling</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.23.8/babel.min.js"></script>
   <style>
-    /* CSS FIX: @import måste vara absolut först */
+    /* FIX 2: @import ligger nu absolut högst upp i stylesheeten */
     @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap');
     
     *, *::before, *::after { box-sizing: border-box; }
@@ -40,8 +40,11 @@
 </head>
 <body>
 <div id="root"></div>
+
 <script type="text/babel" data-presets="react">
-// JS FIX: Använd React direkt från window (inga imports!)
+/** @jsx React.createElement */
+/** @jsxFrag React.Fragment */
+
 const { useState, useEffect, useCallback, useRef } = React;
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
@@ -60,7 +63,7 @@ const Trophy   = ({size=16,color="currentColor"}) => <svg width={size} height={s
 const ChevronUp   = ({size=16,color="currentColor"}) => <Icon size={size} color={color} d="M18 15l-6-6-6 6"/>;
 const ChevronDown = ({size=16,color="currentColor"}) => <Icon size={size} color={color} d="M6 9l6 6 6-6"/>;
 const Users    = ({size=16,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
-const Settings = ({size=16,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
+const Settings = ({size=16,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
 const XIcon    = ({size=16,color="currentColor"}) => <Icon size={size} color={color} d="M18 6L6 18M6 6l12 12"/>;
 const Star     = ({size=16,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
 const Trash2   = ({size=16,color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>;
@@ -104,11 +107,11 @@ const TeamShield = ({ teamId, size=32 }) => {
     1:  <line x1="3" y1={h*.43} x2={w-3} y2={h*.43} stroke={t.sec} strokeWidth="1" opacity=".5"/>,
     4:  <polygon points={`${cx},${h*.2} ${w-6},${h*.4} ${w-6},${h*.2}`} fill={t.sec} opacity=".22"/>,
     6:  <circle cx={cx} cy={h*.38} r={size*.09} fill="none" stroke={t.sec} strokeWidth="1" opacity=".5"/>,
-    7:  <><clipPath id={`c7${uid}`}><path d={ip}/></clipPath><rect x={cx} y={h*.06} width={cx-6} height={h*.88} fill="#003DA5" opacity=".55" clipPath={`url(#c7${uid})`}/><line x1={cx} y1={h*.06} x2={cx} y2={h*.92} stroke="#FFF" strokeWidth=".8" opacity=".4"/></>,
+    7:  <React.Fragment><clipPath id={`c7${uid}`}><path d={ip}/></clipPath><rect x={cx} y={h*.06} width={cx-6} height={h*.88} fill="#003DA5" opacity=".55" clipPath={`url(#c7${uid})`}/><line x1={cx} y1={h*.06} x2={cx} y2={h*.92} stroke="#FFF" strokeWidth=".8" opacity=".4"/></React.Fragment>,
     10: <rect x={w*.25} y={h*.25} width={w*.5} height={h*.43} rx="2" fill="none" stroke={t.txt} strokeWidth=".8" opacity=".3"/>,
     11: <polygon points={`${cx},${h*.2} ${cx+size*.08},${h*.31} ${cx},${h*.27} ${cx-size*.08},${h*.31}`} fill={t.sec} opacity=".6"/>,
     12: <line x1="3" y1={h*.52} x2={w-3} y2={h*.52} stroke={t.sec} strokeWidth="1.2" opacity=".5"/>,
-    16: <><clipPath id={`c16${uid}`}><path d={ip}/></clipPath><line x1="3" y1={h*.22} x2={w*.55} y2={h*.75} stroke="#FFF" strokeWidth="3.5" opacity=".15" clipPath={`url(#c16${uid})`}/><line x1={w*.2} y1={h*.18} x2={w*.9} y2={h*.72} stroke="#FFF" strokeWidth="3.5" opacity=".15" clipPath={`url(#c16${uid})`}/></>,
+    16: <React.Fragment><clipPath id={`c16${uid}`}><path d={ip}/></clipPath><line x1="3" y1={h*.22} x2={w*.55} y2={h*.75} stroke="#FFF" strokeWidth="3.5" opacity=".15" clipPath={`url(#c16${uid})`}/><line x1={w*.2} y1={h*.18} x2={w*.9} y2={h*.72} stroke="#FFF" strokeWidth="3.5" opacity=".15" clipPath={`url(#c16${uid})`}/></React.Fragment>,
   };
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="sh">
@@ -161,7 +164,7 @@ const LS = {
 // ── TABLE + SCORING ───────────────────────────────────────────────────────────
 const initTable = () => TEAMS.map(t=>({teamId:t.id,played:0,points:0,goalDiff:0}));
 
-// DATA FIX: Säkerställer att smutsig data (ex. '-') tvingas till 0 innan sortering!
+// FIX 3: Denna funktion kraschar inte längre om du råkar spara felaktig data (t.ex. -)
 const sortTable = d => [...d].sort((a,b)=>{
   const pA = Number(a.points) || 0;
   const pB = Number(b.points) || 0;
